@@ -47,6 +47,9 @@ uv run python scripts/train_eval.py
 
 # 3. Aggregate the per-model results into a comparison table and figures
 uv run python scripts/build_results.py
+
+# Optional: retrain DeiT-S on a random image-level split to measure the leak
+uv run python scripts/leakage_control.py
 ```
 
 The notebooks in `notebooks/` mirror this workflow: data audit, training, evaluation and results.
@@ -65,7 +68,7 @@ The notebooks in `notebooks/` mirror this workflow: data audit, training, evalua
 
 ```
 src/malaria_vit/   importable package (config, data, models, lit_module, train, metrics, evaluate, efficiency)
-scripts/           build_split.py, train_eval.py, build_results.py
+scripts/           build_split.py, train_eval.py, build_results.py, leakage_control.py
 tests/             pytest suite (incl. the no-leakage split test)
 notebooks/         01 data audit, 02 train, 03 evaluate, 04 results
 docs/              results.md, comparison.csv, figures/

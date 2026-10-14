@@ -13,6 +13,8 @@
 - **200 distinct patients**, recovered from the leading `C<number>` in each filename — matching the known cohort of **150 *P. falciparum*-infected + 50 healthy** patients.
 - **150 patients contribute cells to *both* classes** (infected patients provide both parasitised and normal-looking cells); the 50 healthy patients provide only uninfected cells.
 - *Why this matters:* a random image-level split would place the **same patient** in train and test simultaneously — in both classes — inflating accuracy. This is the concrete justification for patient-level splitting.
+- **Cells also cluster by source photo:** 936 of the 1,408 microscope images contain cells of both classes, so
+  20,083 cells (73%) share a photo with a cell of the other class.
 - Filename parsing note: the patient identifier is the leading `C<number>` (e.g. `C39P4thinF…`→`C39`, `C225ThinF…`→`C225`, `C51AP12…`→`C51`); the `P` sub-code is not a reliable patient key (3,552 uninfected files have no `P` part).
 
 ## Patient-level split
@@ -50,6 +52,21 @@ Two caveats:
 | ViT-B/16 | 0.973 | 0.980 | 0.966 | 0.973 | 0.996 | 85.8 | 19.3 | 16.87 |
 
 Benchmark for context (published, patient-level): CNNs ~0.89 (Laghari et al., 2025).
+
+## Leakage control: image-level split
+DeiT-S retrained with the same recipe and seed on a random image-level 70/15/15 split (stratified by label) by
+`scripts/leakage_control.py`. Under that split all 200 patients appear in both train and test, and every test cell
+shares its source microscope photo with a training cell.
+
+| Split | Test cells | Test patients seen in training | Accuracy | F1 | ROC-AUC | Epochs run (best) |
+|---|---|---|---|---|---|---|
+| Patient-level | 4,074 | 0 of 30 | 0.966 | 0.966 | 0.994 | 4 (1) |
+| Image-level | 4,134 | 200 of 200 | 0.971 | 0.972 | 0.995 | 11 (8) |
+
+- For DeiT-S the leak is worth about 0.5 points of accuracy, inside the roughly ±0.5-point 95% sampling uncertainty
+  of each figure (cells treated as independent). One seed.
+- Leaky validation lengthened training: early stopping ran 11 epochs instead of 4.
+- The leaky run shows no tell-tale signature (AUC 0.995, 118 errors). The leak is visible in the split, not in the scores.
 
 ## Key takeaways
 - **All three ViTs reach 0.966–0.973 accuracy / 0.994–0.996 ROC-AUC** on held-out (unseen) patients under the verified leakage-free protocol — above the ~0.89 CNN patient-level benchmark (Laghari et al., 2025) and in line with Rajaraman et al. (2018) single-model patient-level (0.959 / AUC 0.991). Under clean evaluation, ViTs match/beat the CNN baselines — the gap this project set out to test.
