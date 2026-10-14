@@ -1,7 +1,6 @@
-# Experiment Record — Vision Transformer arm
+# Experiment record
 
-> Factual record of the ViT experiments (source material for the report — not the assessed write-up).
-> Updated as each model completes. British English throughout.
+> Factual record of the experiments: dataset audit, split, training configuration and results.
 
 ## Environment
 - GPU: NVIDIA RTX 3060 Laptop (6 GB VRAM). Python 3.12 (uv). PyTorch 2.6.0+cu124, `timm`, PyTorch Lightning.
@@ -16,7 +15,7 @@
 - *Why this matters:* a random image-level split would place the **same patient** in train and test simultaneously — in both classes — inflating accuracy. This is the concrete justification for patient-level splitting.
 - Filename parsing note: the patient identifier is the leading `C<number>` (e.g. `C39P4thinF…`→`C39`, `C225ThinF…`→`C225`, `C51AP12…`→`C51`); the `P` sub-code is not a reliable patient key (3,552 uninfected files have no `P` part).
 
-## Split (shared protocol)
+## Patient-level split
 - Patient-grouped, class-stratified, **70/15/15**, seed 42, saved as `data/split.csv`.
 - **Verified on real data: 0 patients span splits** (no leakage). 200 patients → **140 / 30 / 30** (train/val/test).
 - Cell counts per split: train 19,897 · val 3,587 · test 4,074 (vary by patient cell-count; test set well balanced: 2,049 uninfected / 2,025 parasitised).
@@ -26,8 +25,23 @@
 - Transfer learning from ImageNet weights, binary head; AdamW, early stopping on validation loss, best-validation checkpoint used for the single held-out test evaluation.
 - Metrics: accuracy, precision, recall, F1, ROC-AUC, confusion matrix (performance) + parameters, latency, FLOPs (efficiency).
 
+## Training configuration and convergence
+Shared across all three: AdamW, lr 3e-5 (constant, no schedule), PyTorch default weight decay (0.01), cross-entropy loss,
+`bf16-mixed`, max 15 epochs, early stopping on validation loss (patience 3), best-validation-loss checkpoint, seed 42.
+
+| Model | Real batch | Accum | Effective batch | Aug | Epochs run | Best epoch (1-idx) | Val acc @ best |
+|---|---|---|---|---|---|---|---|
+| DeiT-S | 32 | 2 | 64 | strong jitter | 4 | 1 | 0.965 |
+| Swin-T | 24 | 3 | 72 | standard | 7 | 4 | 0.967 |
+| ViT-B/16 | 12 | 5 | 60 | standard | 10 | 7 | 0.967 |
+
+Two caveats:
+- **Effective batch is not identical (60 to 72).** The real batch was sized to fit 6 GB of VRAM, so the three models were
+  not trained under perfectly matched conditions.
+- **DeiT-S hit its best validation loss after a single epoch.** A well-pretrained backbone converges almost immediately on
+  this dataset; no model used its 15-epoch budget.
+
 ## Model results
-*Populated as each model completes (walking-skeleton order: DeiT-S → Swin-T → ViT-B/16).*
 
 | Model | Accuracy | Precision | Recall | F1 | ROC-AUC | Params (M) | Latency (ms) | GFLOPs |
 |---|---|---|---|---|---|---|---|---|

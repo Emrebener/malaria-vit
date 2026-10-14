@@ -1,7 +1,7 @@
-"""Aggregate per-model results into a comparison table + report figures.
+"""Aggregate per-model results into a comparison table + figures.
 
 Reads outputs/<key>/metrics.json (produced by train_eval.py) and writes the
-report-facing artefacts into docs/: comparison.csv and figures/*.png.
+results artefacts into docs/: comparison.csv and figures/*.png.
 
     uv run python scripts/build_results.py
 """
